@@ -1,6 +1,8 @@
 #ifndef FILESYSTEM_MANAGER_H
 #define FILESYSTEM_MANAGER_H
 
+#ifdef __cplusplus
+
 #include <Arduino.h>
 #include <Wire.h>
 #include "MjolnConst.h"
@@ -24,4 +26,7 @@ uint8_t eepromReadBytes(uint8_t eepromAddr, uint32_t storeAddr, uint8_t *buffer,
  */
 bool eepromWriteBytes(uint8_t eepromAddr, uint32_t storeAddr, const uint8_t *data, uint16_t length);
 
+bool deletePartition(uint8_t eepromAddr, uint16_t length);
+
+#endif // __cplusplus
 #endif // FILESYSTEM_MANAGER_H

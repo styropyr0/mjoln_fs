@@ -4,6 +4,13 @@
 #include <Arduino.h>
 #include "MjolnConst.h"
 
+#ifdef __cplusplus
+
+/**
+ * @brief Mjoln EEPROM File System FAT Entry
+ * @note This structure represents a FAT entry in the Mjoln EEPROM File System.
+ * @note It contains information about the start address, size, filename, and status of the file.
+ */
 struct FS_FATEntry
 {
     uint8_t startAddr[MJOLN_FILE_SYSTEM_START_ADDR_SIZE]; // Start address of the file in EEPROM
@@ -12,40 +19,23 @@ struct FS_FATEntry
     uint8_t status;                                       // Status of the file (0: free, 1: used)
 };
 
-FS_FATEntry toFATEntry(uint8_t *buffer, size_t bufferSize)
-{
-    FS_FATEntry fatEntry;
+/**
+ * @brief Converts a byte buffer to a FS_FATEntry structure.
+ * @param buffer Pointer to the byte buffer.
+ * @param bufferSize Size of the buffer.
+ * @return FS_FATEntry structure.
+ * @note The buffer must be at least sizeof(FS_FATEntry) bytes long.
+ */
+FS_FATEntry toFATEntry(uint8_t *buffer, size_t bufferSize);
 
-    if (bufferSize < sizeof(FS_FATEntry))
-    {
-        return {};
-    }
+/**
+ * @brief Converts a FS_FATEntry structure to a byte buffer.
+ * @param fatEntry Pointer to the FS_FATEntry structure.
+ * @return Pointer to the byte buffer.
+ * @note The caller is responsible for freeing the allocated memory.
+ */
+uint8_t *fatToBytes(const FS_FATEntry *fatEntry);
 
-    memcpy(fatEntry.startAddr, buffer, MJOLN_FILE_SYSTEM_START_ADDR_SIZE);
-    memcpy(fatEntry.size, &buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE], MJOLN_FILE_SYSTEM_FILE_SIZE);
-    memcpy(fatEntry.filename, &buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE], MJOLN_FILE_NAME_MAX_LENGTH - 1);
-
-    fatEntry.filename[MJOLN_FILE_NAME_MAX_LENGTH - 1] = '\0';
-    fatEntry.status = buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1];
-
-    return fatEntry;
-}
-
-uint8_t *toBytes(FS_FATEntry *fatEntry)
-{
-    uint8_t *buffer = (uint8_t *)malloc(sizeof(FS_FATEntry));
-
-    if (!buffer)
-        return NULL;
-
-    memcpy(buffer, fatEntry->startAddr, MJOLN_FILE_SYSTEM_START_ADDR_SIZE);
-    memcpy(&buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE], fatEntry->size, MJOLN_FILE_SYSTEM_FILE_SIZE);
-    memcpy(&buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE], fatEntry->filename, MJOLN_FILE_NAME_MAX_LENGTH - 1);
-
-    buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1] = fatEntry->status;
-
-    return buffer;
-}
-
+#endif //__cplusplus
 #endif // FS_FATENTRY_H
        // This file defines the structure of the FAT entry in the Mjoln EEPROM File System.

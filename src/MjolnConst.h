@@ -11,7 +11,7 @@
  */
 
 #define MJOLN_FILE_SYSTEM_VERSION 1              // Version of the Mjoln EEPROM File System
-#define MJOLN_SIGNATURE 0x1DBD34                 // Signature to identify the file system
+#define MJOLN_SIGNATURE "MjolnFS"                // Signature to identify the file system
 #define MJOLN_FILE_NAME_MAX_LENGTH 9             // Maximum length of the file name
 #define MJOLN_FILE_SYSTEM_SIGNATURE_SIZE 8       // Length of the file system signature
 #define MJOLN_FILE_SYSTEM_PAGE_SIZE 64           // Size of a page in EEPROM
@@ -22,5 +22,7 @@
 #define MJOLN_FILE_SYSTEM_START_ADDR_SIZE 0x03   // Start address of the file system in EEPROM
 #define MJOLN_FILE_SYSTEM_FILE_SIZE 0x03         // Size of the file in bytes
 #define MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH 0x02 // Maximum size of a file in bytes
+
+#define MJOLN_STORAGE_DEVICE_ADDRESS 0x50 // I2C address of the EEPROM device
 
 #endif // MJOLN_CONST_H
