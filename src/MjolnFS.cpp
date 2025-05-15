@@ -160,11 +160,9 @@ char *MjolnFileSystem::readFile(const char *filename, char *buffer)
         if (strcmp(fatEntry.filename, filename) == 0)
         {
             uint32_t length = fatEntry.size[0] | (fatEntry.size[1] << 8) | (fatEntry.size[2] << 16);
-            uint8_t *buffer1 = (uint8_t *)malloc(length);
             uint32_t startAddr = fatEntry.startAddr[0] | (fatEntry.startAddr[1] << 8) | (fatEntry.startAddr[2] << 16);
             printLogs("Reading file...\n");
-            eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, (uint8_t *)buffer1, length);
-            buffer = (char *)buffer1;
+            eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, (uint8_t *)buffer, length);
             printLogs("File read successfully.\n");
             if (logEnabled)
             {
