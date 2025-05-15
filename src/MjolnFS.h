@@ -25,6 +25,7 @@ public:
     // void printFileSystemInfo();
     // void printFileInfo(const char *filename);
     bool format();
+    void showLogs(bool show);
 
 private:
     uint8_t _deviceAddress;            // I2C address of the EEPROM

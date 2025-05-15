@@ -1,7 +1,4 @@
 #include "FileSystemManager.h"
-#include <Wire.h>
-#include <Arduino.h>
-#include "MjolnConst.h"
 
 uint8_t eepromReadBytes(uint8_t eepromAddr, uint32_t storeAddr, uint8_t *buffer, uint16_t length)
 {
@@ -25,13 +22,17 @@ bool eepromWriteBytes(uint8_t eepromAddr, uint32_t storeAddr, const uint8_t *dat
     for (uint16_t i = 0; i < length; i++)
     {
         Wire.write(data[i]);
+        Serial.print(data[i], HEX);
+        Serial.print(" ");
     }
     return Wire.endTransmission() == 0;
 }
 
 bool deletePartition(uint8_t eepromAddr, uint16_t length)
 {
-    for (uint16_t addr = 0; addr < length; addr += 64)
+    printLogs("Deleting partition...\n");
+    uint8_t progress = 0;
+    for (uint16_t addr = 0; addr < length - 64; addr += 64)
     {
         Wire.beginTransmission(eepromAddr);
         Wire.write((addr >> 8) & 0xFF);
@@ -40,9 +41,18 @@ bool deletePartition(uint8_t eepromAddr, uint16_t length)
         {
             Wire.write(0xFF);
         }
+        Serial.println(addr);
+        yield();
+        if ((addr / length) * 100 > progress)
+        {
+            progress = (addr / length) * 100;
+            printLogs("[ " + String(progress) + "% ]\n");
+        }
         if (Wire.endTransmission() != 0)
             return false;
         delay(5);
     }
+    printLogs("[ 100% ]\n");
+    printLogs("Partition deleted successfully.\n");
     return true;
 }

@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include "Logger.h"
 #include "MjolnConst.h"
 
 /**
