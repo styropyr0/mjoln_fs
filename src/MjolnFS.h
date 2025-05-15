@@ -11,15 +11,27 @@
 #include <Wire.h>
 #include <Arduino.h>
 
+enum AT24CXType
+{
+    AT24C04 = 0x09,
+    AT24C08 = 0x0A,
+    AT24C16 = 0x0B,
+    AT24C32 = 0x0C,
+    AT24C64 = 0x0D,
+    AT24C128 = 0x0E,
+    AT24C256 = 0x0F,
+    AT24C512 = 0x10,
+};
+
 class MjolnFileSystem
 {
 public:
-    MjolnFileSystem(uint8_t deviceAddress);
+    MjolnFileSystem(AT24CXType eepromModel);
 
     bool begin();
     // bool createFile(const char *filename);
-    // bool writeFile(const char *filename, const uint8_t *data, uint32_t length);
-    // uint32_t readFile(const char *filename, uint8_t *buffer, uint32_t maxLength);
+    bool writeFile(const char *filename, const char *data);
+    char *readFile(const char *filename, char *buffer);
     // bool deleteFile(const char *filename);
     // void listFiles();
     // void printFileSystemInfo();
@@ -32,6 +44,7 @@ private:
     uint32_t _eepromSize;              // Size of the EEPROM in bytes
     uint16_t _pageSize;                // Size of a page in EEPROM
     const char *signature = "MjolnFS"; // File system signature
+    AT24CXType _eepromType;            // Type of the EEPROM
 
     FS_BootSector _bootSector;
     FS_FATEntry *_fatEntries;
@@ -40,7 +53,10 @@ private:
     FS_BootSector readBootSector();
     void writeBootSector(const FS_BootSector &bootSector);
     FS_FATEntry readFATEntry(uint16_t index);
-    void writeFATEntry(uint16_t index, const FS_FATEntry &entry);
+    bool writeFATEntry(uint16_t index, const FS_FATEntry &entry);
+    uint8_t getPageSize();
+    uint16_t getUsableSize();
+    uint16_t getReservedSize();
 };
 
 #endif // __cplusplus

@@ -15,7 +15,8 @@ struct FS_BootSector
 {
     char signature[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE];       // Signature to identify the file system
     uint8_t version;                                        // Version of the file system
-    uint8_t reserved[6];                                    // Reserved bytes
+    uint8_t reserved[3];                                    // Reserved bytes
+    uint8_t lastDataAddr[3];                                // Last data address in EEPROM
     uint8_t pageSize;                                       // Size of a page in EEPROM
     uint8_t fileCount[MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH]; // Number of files in the file system
 };
