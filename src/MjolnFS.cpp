@@ -9,7 +9,7 @@ FS_BootSector MjolnFileSystem::readBootSector()
 {
     FS_BootSector bootSector;
     uint8_t buffer[sizeof(FS_BootSector)];
-    eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, 0, buffer, sizeof(FS_BootSector));
+    eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, 0, getAddressSize(), buffer, sizeof(FS_BootSector), getPageSize());
     bootSector = toBootSector(buffer);
     return bootSector;
 }
@@ -18,7 +18,7 @@ void MjolnFileSystem::writeBootSector(const FS_BootSector &bootSector)
 {
     uint8_t *buffer = bootSectorToBytes(&bootSector);
     printLogs("Writing boot sector...\n");
-    eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, 0, buffer, sizeof(FS_BootSector));
+    eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, 0, getAddressSize(), buffer, sizeof(FS_BootSector), getPageSize());
     printLogs("Boot sector written successfully.\n");
     printLogs("Boot sector data: ");
 
@@ -33,7 +33,7 @@ FS_FATEntry MjolnFileSystem::readFATEntry(uint16_t index)
 {
     FS_FATEntry fatEntry;
     uint8_t buffer[sizeof(FS_FATEntry)];
-    eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, sizeof(FS_BootSector) + index * sizeof(FS_FATEntry), buffer, sizeof(FS_FATEntry));
+    eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, sizeof(FS_BootSector) + index * sizeof(FS_FATEntry), getAddressSize(), buffer, sizeof(FS_FATEntry), getPageSize());
     fatEntry = toFATEntry(buffer, sizeof(buffer));
     return fatEntry;
 }
@@ -41,7 +41,7 @@ FS_FATEntry MjolnFileSystem::readFATEntry(uint16_t index)
 bool MjolnFileSystem::writeFATEntry(uint16_t index, const FS_FATEntry &entry)
 {
     uint8_t *buffer = fatToBytes(&entry);
-    if (eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, sizeof(FS_BootSector) + index * sizeof(FS_FATEntry), buffer, sizeof(FS_FATEntry)))
+    if (eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, sizeof(FS_BootSector) + index * sizeof(FS_FATEntry), getAddressSize(), buffer, sizeof(FS_FATEntry), getPageSize()))
     {
         free(buffer);
         printLogs("FAT entry written successfully.\n");
@@ -69,6 +69,9 @@ bool MjolnFileSystem::begin()
         printLogs("File system signature: " + String(_bootSector.signature) + "\n");
         printLogs("Last data address: " + String(lastDataAddr) + "\n");
         printLogs("File count: " + String(_bootSector.fileCount[0] | _bootSector.fileCount[1] << 8) + "\n");
+        printLogs("\nSTORAGE USAGE\n-------------\n");
+        printLogs(String(((lastDataAddr - getReservedSize()) * 100) / (pow(2, (uint8_t)_eepromType))) + "\% used from available space.\n");
+        printLogs("Total: " + String((uint8_t)pow(2, (uint8_t)_eepromType)) + " bytes, " + String(getReservedSize()) + " bytes reserved by file system.\n");
     }
     else
     {
@@ -114,15 +117,16 @@ bool MjolnFileSystem::writeFile(const char *filename, const char *data)
     fatEntry.size[1] = (length >> 8) & 0xFF;
     fatEntry.size[2] = (length >> 16) & 0xFF;
     memcpy(fatEntry.startAddr, _bootSector.lastDataAddr, sizeof(fatEntry.startAddr));
+    printLogs("Writing file...\n");
     uint32_t startAddr = _bootSector.lastDataAddr[0] | (_bootSector.lastDataAddr[1] << 8) | (_bootSector.lastDataAddr[2] << 16);
 
     if (writeFATEntry(_fatEntryCount + 1, fatEntry))
     {
-        if (eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, (const uint8_t *)data, length))
+        if (eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (const uint8_t *)data, length, getPageSize()))
         {
-            _bootSector.lastDataAddr[0] += length;
-            _bootSector.lastDataAddr[1] += (length >> 8) & 0xFF;
-            _bootSector.lastDataAddr[2] += (length >> 16) & 0xFF;
+            _bootSector.lastDataAddr[0] = (startAddr + length) & 0xFF;
+            _bootSector.lastDataAddr[1] = ((startAddr + length) >> 8) & 0xFF;
+            _bootSector.lastDataAddr[2] = ((startAddr + length) >> 16) & 0xFF;
             _bootSector.fileCount[0] += 1;
             _bootSector.fileCount[1] += (_bootSector.fileCount[0] >> 8) & 0xFF;
             writeBootSector(_bootSector);
@@ -132,6 +136,7 @@ bool MjolnFileSystem::writeFile(const char *filename, const char *data)
             printLogs("Failed to write file data.\n");
             return false;
         }
+        _fatEntryCount++;
     }
 
     if (logEnabled)
@@ -162,8 +167,7 @@ char *MjolnFileSystem::readFile(const char *filename, char *buffer)
             uint32_t length = fatEntry.size[0] | (fatEntry.size[1] << 8) | (fatEntry.size[2] << 16);
             uint32_t startAddr = fatEntry.startAddr[0] | (fatEntry.startAddr[1] << 8) | (fatEntry.startAddr[2] << 16);
             printLogs("Reading file...\n");
-            eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, (uint8_t *)buffer, length);
-            printLogs("File read successfully.\n");
+            eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (uint8_t *)buffer, length, getPageSize());
             if (logEnabled)
             {
                 printLogs("\nFILE READ LOGS\n");
@@ -239,4 +243,9 @@ uint16_t MjolnFileSystem::getReservedSize()
     default:
         return 0;
     }
+}
+
+AT24CX_ADDR_SIZE MjolnFileSystem::getAddressSize()
+{
+    return (_eepromType == AT24C04 || _eepromType == AT24C08 || _eepromType == AT24C16) ? AT24CX_8Bit : AT24CX_16Bit;
 }

@@ -6,11 +6,11 @@ FS_BootSector toBootSector(uint8_t *buffer)
 
     memcpy(bootSector.signature, buffer, MJOLN_FILE_SYSTEM_SIGNATURE_SIZE);
     bootSector.version = buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE];
-    memcpy(bootSector.reserved, &buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 1], 3);
-    memcpy(bootSector.lastDataAddr, &buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 4], 3);
-    bootSector.pageSize = buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 7];
-    memcpy(bootSector.fileCount, &buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 8], MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH);
+    memcpy(bootSector.lastDataAddr, &buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 1], 3);
+    bootSector.pageSize = buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 4];
+    memcpy(bootSector.fileCount, &buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 5], MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH);
     bootSector.signature[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE - 1] = '\0';
+    memcpy(bootSector.reserved, &buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 7], 1);
 
     return bootSector;
 }
@@ -24,10 +24,10 @@ uint8_t *bootSectorToBytes(const FS_BootSector *bootSector)
 
     memcpy(buffer, bootSector->signature, MJOLN_FILE_SYSTEM_SIGNATURE_SIZE);
     buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE] = bootSector->version;
-    memcpy(&buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 1], bootSector->reserved, 3);
-    memcpy(&buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 4], bootSector->lastDataAddr, 3);
-    buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 7] = bootSector->pageSize;
-    memcpy(&buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 8], bootSector->fileCount, MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH);
+    memcpy(&buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 1], bootSector->lastDataAddr, 3);
+    buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 4] = bootSector->pageSize;
+    memcpy(&buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 5], bootSector->fileCount, MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH);
+    memcpy(&buffer[MJOLN_FILE_SYSTEM_SIGNATURE_SIZE + 7], bootSector->reserved, 1);
 
     return buffer;
 }

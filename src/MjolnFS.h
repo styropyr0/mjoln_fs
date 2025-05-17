@@ -57,6 +57,7 @@ private:
     uint8_t getPageSize();
     uint16_t getUsableSize();
     uint16_t getReservedSize();
+    AT24CX_ADDR_SIZE getAddressSize();
 };
 
 #endif // __cplusplus

@@ -8,26 +8,40 @@
 #include "Logger.h"
 #include "MjolnConst.h"
 
+enum AT24CX_ADDR_SIZE
+{
+    AT24CX_8Bit = 0x00, // 8-bit address size
+    AT24CX_16Bit = 0x01 // 16-bit address size
+};
+
 /**
  * @brief Reads a specified number of bytes from the EEPROM.
  * @param eepromAddr The I2C address of the EEPROM.
  * @param storeAddr The starting address in the EEPROM to read from.
+ * @param addressSize The size of the address in bytes.
  * @param buffer Pointer to the buffer where the read data will be stored.
  * @param length The number of bytes to read.
+ * @param pageSize The size of the EEPROM page.
+ * @note The pageSize is used to determine the maximum number of bytes that can be read in a single operation.
+ * @return true if the read operation was successful, false otherwise.
  */
-bool eepromReadBytes(uint8_t eepromAddr, uint32_t storeAddr, uint8_t *buffer, uint16_t length);
+bool eepromReadBytes(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE addressSize, uint8_t *buffer, uint16_t length, uint8_t pageSize);
 
 /**
  * @brief Writes a specified number of bytes to the EEPROM.
  * @param eepromAddr The I2C address of the EEPROM.
  * @param storeAddr The starting address in the EEPROM to write to.
+ * @param addressSize The size of the address in bytes.
  * @param data Pointer to the data to be written.
  * @param length The number of bytes to write.
+ * @param pageSize The size of the EEPROM page.
+ * @note The pageSize is used to determine the maximum number of bytes that can be written in a single operation.
  * @return true if the write operation was successful, false otherwise.
  */
-bool eepromWriteBytes(uint8_t eepromAddr, uint32_t storeAddr, const uint8_t *data, uint16_t length);
+bool eepromWriteBytes(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE addressSize, const uint8_t *data, uint16_t length, uint8_t pageSize);
 
 bool deletePartition(uint8_t eepromAddr, uint16_t length);
+void readMemoryBlock(uint16_t start, uint16_t end);
 
 #endif // __cplusplus
 #endif // FILESYSTEM_MANAGER_H
