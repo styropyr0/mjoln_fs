@@ -41,23 +41,42 @@ bool eepromWriteBytes(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE a
     return true;
 }
 
-void readMemoryBlock(uint16_t start, uint16_t end)
+void showMemoryDump(uint8_t eepromAddr, uint16_t start, uint16_t end, AT24CX_ADDR_SIZE addressSize, uint8_t pageSize)
 {
-    for (uint16_t addr = start; addr < end; addr++)
+    for (uint16_t addr = start; addr < end; addr += pageSize)
     {
-        printLogs("Addr " + String(addr) + " - " + String(addr + 128) + ": ");
-        Wire.beginTransmission(0x50);
-        Wire.write((addr >> 8) & 0xFF);
+        printLogs("Addr " + String(addr) + " - " + String(addr + pageSize) + ": ");
+        Wire.beginTransmission(eepromAddr);
+        if (addressSize == AT24CX_16Bit)
+            Wire.write((addr >> 8) & 0xFF);
         Wire.write(addr & 0xFF);
         Wire.endTransmission();
-        Wire.requestFrom(0x50, end - start);
-        for (uint16_t i = 0; i < 128; i++)
-        {
+        Wire.requestFrom((int)eepromAddr, end - start);
+        for (uint16_t i = 0; i < pageSize; i++)
             printLogs("0x" + String(Wire.read(), HEX) + ", ");
-        }
         printLogs("\n");
-        addr += 128;
     }
+}
+
+bool eepromDeleteMemoryRange(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE addressSize, uint16_t length, uint8_t pageSize)
+{
+    uint16_t bytesWrote = 0;
+    while (length > 0)
+    {
+        uint16_t remainingPageSize = min(length, (uint16_t)(pageSize - (storeAddr % pageSize)));
+        delay(5);
+        Wire.beginTransmission(eepromAddr);
+        if (addressSize == AT24CX_16Bit)
+            Wire.write((storeAddr >> 8) & 0xFF);
+        Wire.write(storeAddr & 0xFF);
+        for (uint16_t i = 0; i < remainingPageSize; i++)
+            Wire.write(0xFF);
+        length -= remainingPageSize;
+        storeAddr += remainingPageSize;
+        if (Wire.endTransmission() != 0)
+            return false;
+    }
+    return true;
 }
 
 bool deletePartition(uint8_t eepromAddr, uint16_t length)

@@ -32,12 +32,15 @@ public:
     // bool createFile(const char *filename);
     bool writeFile(const char *filename, const char *data);
     char *readFile(const char *filename, char *buffer);
+    bool deleteFile(const char *filename);
     // bool deleteFile(const char *filename);
     // void listFiles();
     // void printFileSystemInfo();
     // void printFileInfo(const char *filename);
     bool format();
     void showLogs(bool show);
+    float getStorageUsage();
+    uint32_t getBytesUsed();
 
 private:
     uint8_t _deviceAddress;            // I2C address of the EEPROM
@@ -51,9 +54,10 @@ private:
     uint16_t _fatEntryCount;
 
     FS_BootSector readBootSector();
-    void writeBootSector(const FS_BootSector &bootSector);
+    bool writeBootSector(const FS_BootSector &bootSector);
     FS_FATEntry readFATEntry(uint16_t index);
     bool writeFATEntry(uint16_t index, const FS_FATEntry &entry);
+    bool updateFATEntry(uint16_t index, const FS_FATEntry &entry);
     uint8_t getPageSize();
     uint16_t getUsableSize();
     uint16_t getReservedSize();

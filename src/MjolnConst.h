@@ -22,6 +22,8 @@
 #define MJOLN_FILE_SYSTEM_START_ADDR_SIZE 0x03   // Start address of the file system in EEPROM
 #define MJOLN_FILE_SYSTEM_FILE_SIZE 0x03         // Size of the file in bytes
 #define MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH 0x02 // Maximum size of a file in bytes
+#define MJOLN_FILE_SYSTEM_FAT_AVAILABLE 0x01     // The FAT Entry is available in File System
+#define MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE 0x00   // The FAT Entry is unavailable in File System
 
 #define MJOLN_STORAGE_DEVICE_ADDRESS 0x50 // I2C address of the EEPROM device
 

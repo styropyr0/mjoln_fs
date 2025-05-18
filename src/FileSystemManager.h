@@ -40,8 +40,10 @@ bool eepromReadBytes(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE ad
  */
 bool eepromWriteBytes(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE addressSize, const uint8_t *data, uint16_t length, uint8_t pageSize);
 
+bool eepromDeleteMemoryRange(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE addressSize, uint16_t length, uint8_t pageSize);
+
 bool deletePartition(uint8_t eepromAddr, uint16_t length);
-void readMemoryBlock(uint16_t start, uint16_t end);
+void showMemoryDump(uint8_t eepromAddr, uint16_t start, uint16_t end, AT24CX_ADDR_SIZE addressSize, uint8_t pageSize);
 
 #endif // __cplusplus
 #endif // FILESYSTEM_MANAGER_H
