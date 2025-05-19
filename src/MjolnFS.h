@@ -23,22 +23,104 @@ enum AT24CXType
     AT24C512 = 0x10,
 };
 
+/**
+ * @brief MjolnFileSystem class for EEPROM file management.
+ *
+ * Manages file operations, storage tracking, and system control on an AT24C EEPROM.
+ * @author Saurav Sajeev
+ */
 class MjolnFileSystem
 {
 public:
+    /**
+     * @brief Constructs the MjolnFileSystem object.
+     * @param eepromModel Specifies the EEPROM type from AT24CXType enum.
+     */
     MjolnFileSystem(AT24CXType eepromModel);
 
+    /**
+     * @brief Initializes the file system.
+     * @return True if initialization succeeds, false otherwise.
+     * @note Must be called before performing any file operations.
+     */
     bool begin();
+
+    /**
+     * @brief Writes data to a file.
+     * @param filename Name of the file to write to.
+     * @param data Data to be written.
+     * @return True if write operation is successful, false otherwise.
+     * @note Overwrites existing content if the file already exists.
+     */
     bool writeFile(const char *filename, const char *data);
+
+    /**
+     * @brief Reads data from a file.
+     * @param filename Name of the file to read.
+     * @param buffer Buffer to store the read data.
+     * @return Pointer to the buffer containing file contents.
+     * @note Caller is responsible for deallocating the buffer.
+     */
     char *readFile(const char *filename, char *buffer);
+
+    /**
+     * @brief Deletes a specified file.
+     * @param filename Name of the file to delete.
+     * @return True if deletion succeeds, false otherwise.
+     * @note Deleted files cannot be recovered.
+     */
     bool deleteFile(const char *filename);
+
+    /**
+     * @brief Lists all available files in the system.
+     * @note Outputs file names to the serial terminal.
+     */
     void listFiles();
+
+    /**
+     * @brief Prints general information about the file system.
+     * @note Displays EEPROM model, total storage, used storage, and available space.
+     */
     void printFileSystemInfo();
+
+    /**
+     * @brief Prints detailed information about a specific file.
+     * @param filename Name of the file to inspect.
+     * @note Displays file size, metadata, and last modification time.
+     */
     void printFileInfo(const char *filename);
+
+    /**
+     * @brief Formats the file system, erasing all data.
+     * @return True if formatting succeeds, false otherwise.
+     * @note **WARNING:** This action deletes all stored files permanently.
+     */
     bool format();
+
+    /**
+     * @brief Enables or disables system logs.
+     * @param show Set to true to enable logs, false to disable.
+     * @note Logs display system activity for debugging purposes.
+     */
     void showLogs(bool show);
+
+    /**
+     * @brief Retrieves the percentage of storage used.
+     * @return Storage usage as a percentage (0.0 to 100.0).
+     * @note Useful for monitoring EEPROM capacity.
+     */
     float getStorageUsage();
+
+    /**
+     * @brief Gets the number of bytes used in storage.
+     * @return Total bytes occupied in EEPROM.
+     */
     uint32_t getBytesUsed();
+
+    /**
+     * @brief Handles user commands via a serial terminal.
+     * @note Supports file manipulation, system queries, and formatting operations.
+     */
     void terminal();
 
 private:
