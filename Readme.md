@@ -124,6 +124,7 @@ The `terminal()` function supports various commands for file system interactions
 | `delpart`          | Format EEPROM and erase all stored data           | `delpart`                    |
 | `storeuse`         | Show storage usage percentage                     | `storeuse`                    |
 | `storeusebytes`    | Show the total number of bytes currently used     | `storeusebytes`               |
+| `exit`             | Exit the terminal                                 | `exit`                        |
 
 ---
 
