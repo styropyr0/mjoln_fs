@@ -24,6 +24,7 @@
 #define MJOLN_FILE_SYSTEM_FILE_COUNT_LENGTH 0x02 // Maximum size of a file in bytes
 #define MJOLN_FILE_SYSTEM_FAT_AVAILABLE 0x01     // The FAT Entry is available in File System
 #define MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE 0x00   // The FAT Entry is unavailable in File System
+#define MJOLN_FILE_NOT_FOUND 0                   // The default value to be returned when file is not found
 
 #define MJOLN_STORAGE_DEVICE_ADDRESS 0x50 // I2C address of the EEPROM device
 

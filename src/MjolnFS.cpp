@@ -1,7 +1,7 @@
 #include "MjolnFS.h"
 
 MjolnFileSystem::MjolnFileSystem(AT24CXType eepromModel)
-    : _eepromType(eepromModel), _deviceAddress(MJOLN_STORAGE_DEVICE_ADDRESS), _eepromSize(0), _pageSize(0), _fatEntries(nullptr), _fatEntryCount(0)
+    : _eepromType(eepromModel), _deviceAddress(MJOLN_STORAGE_DEVICE_ADDRESS), _eepromSize(0), _pageSize(0), _fatEntryCount(0), signature(MJOLN_SIGNATURE)
 {
 }
 
@@ -134,83 +134,83 @@ bool MjolnFileSystem::format()
 
 bool MjolnFileSystem::writeFile(const char *filename, const char *data)
 {
-    uint32_t length = strlen(data);
-    FS_FATEntry fatEntry;
-    fatEntry.status = 1;
-    memcpy(fatEntry.filename, filename, MJOLN_FILE_NAME_MAX_LENGTH);
-    fatEntry.size[0] = length & 0xFF;
-    fatEntry.size[1] = (length >> 8) & 0xFF;
-    fatEntry.size[2] = (length >> 16) & 0xFF;
-    memcpy(fatEntry.startAddr, _bootSector.lastDataAddr, sizeof(fatEntry.startAddr));
-    printLogs("Writing file...\n");
-    uint32_t startAddr = _bootSector.lastDataAddr[0] | (_bootSector.lastDataAddr[1] << 8) | (_bootSector.lastDataAddr[2] << 16);
-
-    if (writeFATEntry(_fatEntryCount + 1, fatEntry))
+    if (checkFileExistence(filename) == MJOLN_FILE_NOT_FOUND)
     {
-        if (eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (const uint8_t *)data, length, getPageSize()))
-        {
-            _bootSector.lastDataAddr[0] = (startAddr + length) & 0xFF;
-            _bootSector.lastDataAddr[1] = ((startAddr + length) >> 8) & 0xFF;
-            _bootSector.lastDataAddr[2] = ((startAddr + length) >> 16) & 0xFF;
-            _bootSector.fileCount[0] += 1;
-            _bootSector.fileCount[1] += (_bootSector.fileCount[0] >> 8) & 0xFF;
-            _bootSector.bytesInUse += length;
-            writeBootSector(_bootSector);
-        }
-        else
-        {
-            printLogs("Failed to write file data.\n");
-            return false;
-        }
-        _fatEntryCount++;
-    }
+        uint32_t length = strlen(data);
+        FS_FATEntry fatEntry;
+        fatEntry.status = 1;
+        memcpy(fatEntry.filename, filename, MJOLN_FILE_NAME_MAX_LENGTH);
+        fatEntry.size[0] = length & 0xFF;
+        fatEntry.size[1] = (length >> 8) & 0xFF;
+        fatEntry.size[2] = (length >> 16) & 0xFF;
+        memcpy(fatEntry.startAddr, _bootSector.lastDataAddr, sizeof(fatEntry.startAddr));
+        printLogs("Writing file...\n");
+        uint32_t startAddr = _bootSector.lastDataAddr[0] | (_bootSector.lastDataAddr[1] << 8) | (_bootSector.lastDataAddr[2] << 16);
 
-    if (logEnabled)
-    {
-        printLogs("\nFILE WRITE LOGS\n");
-        printLogs("----------------\n");
-        printLogs("File written successfully.\n");
-        printLogs("File name: " + String(fatEntry.filename) + "\n");
-        printLogs("File size: " + String(length) + "\n");
-        printLogs("File start address: " + String(startAddr) + "\n");
-        printLogs("File status: " + String(fatEntry.status) + "\n");
-        printLogs("File data: ");
-        for (size_t i = 0; i < length; i++)
-            printLogs(String(data[i]));
-        printLogs("\n\n");
-    }
+        if (writeFATEntry(_fatEntryCount + 1, fatEntry))
+        {
+            if (eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (const uint8_t *)data, length, getPageSize()))
+            {
+                _bootSector.lastDataAddr[0] = (startAddr + length) & 0xFF;
+                _bootSector.lastDataAddr[1] = ((startAddr + length) >> 8) & 0xFF;
+                _bootSector.lastDataAddr[2] = ((startAddr + length) >> 16) & 0xFF;
+                _bootSector.fileCount[0] += 1;
+                _bootSector.fileCount[1] += (_bootSector.fileCount[0] >> 8) & 0xFF;
+                _bootSector.bytesInUse += length;
+                writeBootSector(_bootSector);
+            }
+            else
+            {
+                printLogs("Failed to write file data.\n");
+                return false;
+            }
+            _fatEntryCount++;
+        }
 
-    return true;
+        if (logEnabled)
+        {
+            printLogs("\nFILE WRITE LOGS\n");
+            printLogs("----------------\n");
+            printLogs("File written successfully.\n");
+            printLogs("File name: " + String(fatEntry.filename) + "\n");
+            printLogs("File size: " + String(length) + "\n");
+            printLogs("File start address: " + String(startAddr) + "\n");
+            printLogs("File status: " + String(fatEntry.status) + "\n");
+            printLogs("File data: ");
+            for (size_t i = 0; i < length; i++)
+                printLogs(String(data[i]));
+            printLogs("\n\n");
+        }
+
+        return true;
+    }
+    printLogs("Couldn't write this file. File already exists!\n");
+    return false;
 }
 
 char *MjolnFileSystem::readFile(const char *filename, char *buffer)
 {
-    for (uint16_t i = 1; i <= _fatEntryCount; i++)
+    uint16_t i = checkFileExistence(filename);
+    if (i != MJOLN_FILE_NOT_FOUND)
     {
-        FS_FATEntry fatEntry = readFATEntry(i);
-        if (fatEntry.status == MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE)
-            continue;
-        if (strcmp(fatEntry.filename, filename) == 0)
+        uint32_t length = tempFatEntry.size[0] | (tempFatEntry.size[1] << 8) | (tempFatEntry.size[2] << 16);
+        uint32_t startAddr = tempFatEntry.startAddr[0] | (tempFatEntry.startAddr[1] << 8) | (tempFatEntry.startAddr[2] << 16);
+        printLogs("Reading file...\n");
+        eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (uint8_t *)buffer, length, getPageSize());
+        if (logEnabled)
         {
-            uint32_t length = fatEntry.size[0] | (fatEntry.size[1] << 8) | (fatEntry.size[2] << 16);
-            uint32_t startAddr = fatEntry.startAddr[0] | (fatEntry.startAddr[1] << 8) | (fatEntry.startAddr[2] << 16);
-            printLogs("Reading file...\n");
-            eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (uint8_t *)buffer, length, getPageSize());
-            if (logEnabled)
-            {
-                printLogs("\nFILE READ LOGS\n");
-                printLogs("----------------\n");
-                printLogs("File read successfully.\n");
-                printLogs("File name: " + String(fatEntry.filename) + "\n");
-                printLogs("File size: " + String(length) + "\n");
-                printLogs("File start address: " + String(startAddr) + "\n");
-                printLogs("File data: ");
-                for (size_t i = 0; i < length; i++)
-                    printLogs(String(buffer[i]));
-                printLogs("\n\n");
-            }
-            return (char *)buffer;
+            printLogs("\nFILE READ LOGS\n");
+            printLogs("----------------\n");
+            printLogs("File read successfully.\n");
+            printLogs("File name: " + String(tempFatEntry.filename) + "\n");
+            printLogs("File size: " + String(length) + "\n");
+            printLogs("File start address: " + String(startAddr) + "\n");
+            printLogs("File data: ");
+            for (size_t i = 0; i < length; i++)
+                printLogs(String(buffer[i]));
+            printLogs("\n\n");
         }
+        return (char *)buffer;
     }
     printLogs("File not found.\n");
     return nullptr;
@@ -218,55 +218,76 @@ char *MjolnFileSystem::readFile(const char *filename, char *buffer)
 
 bool MjolnFileSystem::deleteFile(const char *filename)
 {
-    for (uint16_t i = 1; i <= _fatEntryCount; i++)
+    uint16_t i = checkFileExistence(filename);
+    if (i != MJOLN_FILE_NOT_FOUND)
     {
-        FS_FATEntry fatEntry = readFATEntry(i);
-        if (fatEntry.status == MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE)
-            continue;
-        if (strcmp(fatEntry.filename, filename) == 0)
+        tempFatEntry.status = 0;
+        if (updateFATEntry(i, tempFatEntry))
         {
-            fatEntry.status = 0;
-            if (updateFATEntry(i, fatEntry))
+            uint32_t length = tempFatEntry.size[0] | (tempFatEntry.size[1] << 8) | (tempFatEntry.size[2] << 16);
+            uint32_t startAddr = tempFatEntry.startAddr[0] | (tempFatEntry.startAddr[1] << 8) | (tempFatEntry.startAddr[2] << 16);
+            printLogs("Deleting file...\n");
+            if (eepromDeleteMemoryRange(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), length, getPageSize()))
             {
-                uint32_t length = fatEntry.size[0] | (fatEntry.size[1] << 8) | (fatEntry.size[2] << 16);
-                uint32_t startAddr = fatEntry.startAddr[0] | (fatEntry.startAddr[1] << 8) | (fatEntry.startAddr[2] << 16);
-                printLogs("Deleting file...\n");
-                if (eepromDeleteMemoryRange(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), length, getPageSize()))
+                if ((_bootSector.lastDataAddr[0] | (_bootSector.lastDataAddr[1] << 8) | (_bootSector.lastDataAddr[2] << 16)) - length == startAddr)
                 {
-                    if ((_bootSector.lastDataAddr[0] | (_bootSector.lastDataAddr[1] << 8) | (_bootSector.lastDataAddr[2] << 16)) - length == startAddr)
-                    {
-                        _bootSector.lastDataAddr[0] = (startAddr - length) & 0xFF;
-                        _bootSector.lastDataAddr[1] = ((startAddr - length) >> 8) & 0xFF;
-                        _bootSector.lastDataAddr[2] = ((startAddr - length) >> 16) & 0xFF;
-                    }
-                    _bootSector.bytesInUse -= length;
-                    _bootSector.deleted++;
-                    writeBootSector(_bootSector);
-                    _bootSector = readBootSector();
+                    _bootSector.lastDataAddr[0] = (startAddr - length) & 0xFF;
+                    _bootSector.lastDataAddr[1] = ((startAddr - length) >> 8) & 0xFF;
+                    _bootSector.lastDataAddr[2] = ((startAddr - length) >> 16) & 0xFF;
                 }
-                else
-                {
-                    printLogs("Failed to delete the file.\n");
-                    fatEntry.status = 1;
-                    updateFATEntry(i, fatEntry);
-                    return false;
-                }
-                if (logEnabled)
-                {
-                    printLogs("\nFILE DELETE LOGS\n");
-                    printLogs("----------------\n");
-                    printLogs("File deleted successfully.\n");
-                    printLogs("File name: " + String(fatEntry.filename) + "\n");
-                    printLogs("File size: " + String(length) + "\n");
-                    printLogs("File start address: " + String(startAddr) + "\n");
-                    printLogs("File status: DELETED\n\n");
-                }
-                return true;
+                _bootSector.bytesInUse -= length;
+                _bootSector.deleted++;
+                writeBootSector(_bootSector);
+                _bootSector = readBootSector();
             }
+            else
+            {
+                printLogs("Failed to delete the file.\n");
+                tempFatEntry.status = 1;
+                updateFATEntry(i, tempFatEntry);
+                return false;
+            }
+            if (logEnabled)
+            {
+                printLogs("\nFILE DELETE LOGS\n");
+                printLogs("----------------\n");
+                printLogs("File deleted successfully.\n");
+                printLogs("File name: " + String(tempFatEntry.filename) + "\n");
+                printLogs("File size: " + String(length) + "\n");
+                printLogs("File start address: " + String(startAddr) + "\n");
+                printLogs("File status: DELETED\n\n");
+            }
+            return true;
         }
     }
     printLogs("File not found.\n");
     return false;
+}
+
+uint16_t MjolnFileSystem::checkFileExistence(const char *filename)
+{
+    for (uint16_t i = 1; i <= _fatEntryCount; i++)
+    {
+        tempFatEntry = readFATEntry(i);
+        if (tempFatEntry.status == MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE)
+            continue;
+        if (strcmp(tempFatEntry.filename, filename) == 0)
+            return i;
+    }
+    return MJOLN_FILE_NOT_FOUND;
+}
+
+void MjolnFileSystem::listFiles()
+{
+    printLogs("FILES LIST\nroot\\\n");
+    for (uint16_t i = 1; i <= _fatEntryCount; i++)
+    {
+        tempFatEntry = readFATEntry(i);
+        if (tempFatEntry.status == MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE)
+            continue;
+        printLogs("     " + String(tempFatEntry.filename) + (i % 8 == 0 ? "\n" : ""));
+    }
+    printLogs("\n");
 }
 
 void MjolnFileSystem::showLogs(bool show)
@@ -333,10 +354,9 @@ AT24CX_ADDR_SIZE MjolnFileSystem::getAddressSize()
 float MjolnFileSystem::getStorageUsage()
 {
     printLogs("\nSTORAGE USAGE\n-------------\n");
-    uint32_t lastDataAddr = _bootSector.lastDataAddr[0] | (_bootSector.lastDataAddr[1] << 8) | (_bootSector.lastDataAddr[2] << 16);
     float usage = (_bootSector.bytesInUse * 100) / (pow(2, (uint8_t)_eepromType));
     printLogs(String(usage) + "\% used from available space.\n");
-    printLogs("Total: " + String((uint8_t)pow(2, (uint8_t)_eepromType)) + " bytes, " + String(getReservedSize()) + " bytes reserved by file system.\n\n");
+    printLogs("Total: " + String((uint32_t)pow(2, (uint8_t)_eepromType)) + " bytes, " + String(getReservedSize()) + " bytes reserved by file system.\n\n");
     return usage;
 }
 
@@ -344,6 +364,73 @@ uint32_t MjolnFileSystem::getBytesUsed()
 {
     printLogs("\nSTORAGE USAGE\n-------------\n");
     printLogs(String(_bootSector.bytesInUse) + " bytes used from available space.\n");
-    printLogs("Total: " + String((uint8_t)pow(2, (uint8_t)_eepromType)) + " bytes, " + String(getReservedSize()) + " bytes reserved by file system.\n\n");
+    printLogs("Total: " + String((uint32_t)pow(2, (uint8_t)_eepromType)) + " bytes, " + String(getReservedSize()) + " bytes reserved by file system.\n\n");
     return _bootSector.bytesInUse;
+}
+
+void MjolnFileSystem::printFileInfo(const char *filename)
+{
+    if (checkFileExistence(filename))
+    {
+        uint32_t length = tempFatEntry.size[0] | (tempFatEntry.size[1] << 8) | (tempFatEntry.size[2] << 16);
+        uint32_t startAddr = tempFatEntry.startAddr[0] | (tempFatEntry.startAddr[1] << 8) | (tempFatEntry.startAddr[2] << 16);
+        printLogs("\nFILE INFORMATION\n");
+        printLogs("----------------\n");
+        printLogs("File name: " + String(tempFatEntry.filename) + "\n");
+        printLogs("File size: " + String(length) + "\n");
+        printLogs("File start address: " + String(startAddr) + "\n");
+        printLogs("\n\n");
+    }
+    else
+        printLogs("File not found!\n");
+}
+
+void MjolnFileSystem::printFileSystemInfo()
+{
+    printLogs("\nMjoln File System\n-----------------\n");
+    printLogs("EEPROM type: " + String(_eepromType) + "\n");
+    printLogs("File system version: " + String(_bootSector.version) + "\n");
+    printLogs("File system signature: " + String(_bootSector.signature) + "\n");
+    printLogs("File count: " + String((_bootSector.fileCount[0] | _bootSector.fileCount[1] << 8) - (uint16_t)_bootSector.deleted) + "\n");
+    printLogs("Total size: " + String((uint32_t)pow(2, (uint8_t)_eepromType)) + " Bytes\n");
+    printLogs("Available size: " + String((uint32_t)pow(2, (uint8_t)_eepromType) - _bootSector.bytesInUse - getReservedSize()) + " Bytes\n");
+    printLogs("Reserved size: " + String(getReservedSize()) + " Bytes\n");
+    printLogs("Address size: " + String(getAddressSize() ? "16 bit\n" : "8 bit\n"));
+    printLogs("Page size: " + String(getPageSize()) + " Bytes\n");
+    printLogs("Storage use: " + String((_bootSector.bytesInUse * 100) / (pow(2, (uint8_t)_eepromType))) + "%\n\n");
+}
+
+void MjolnFileSystem::terminal()
+{
+    String inputString = "";
+    Serial.println("MJOLN FILE SYSTEM TERMINAL");
+    Serial.print("\nmjolnFS@v1> ");
+
+    while (true)
+    {
+        if (Serial.available() > 0)
+        {
+            char inputChar = Serial.read();
+            yield();
+
+            if (inputChar == '\n')
+            {
+                inputString.trim();
+
+                if (inputString.equals("exit"))
+                {
+                    Serial.println("Exiting...");
+                    break;
+                }
+                Serial.println(inputString);
+                processCommand(inputString);
+                inputString = "";
+                Serial.print("\nmjolnFS@v1> ");
+            }
+            else
+            {
+                inputString += inputChar;
+            }
+        }
+    }
 }
