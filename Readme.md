@@ -18,7 +18,8 @@
    - File System Information  
    - Terminal Interaction  
 8. [Notes](#notes)  
-9. [License](#license)  
+9. [Warnings](#warnings)  
+10. [License](#license)  
 
 ---
 
@@ -121,7 +122,7 @@ The `terminal()` function supports various commands for file system interactions
 | `ls`               | List all available files                          | `ls`                         |
 | `read <filename>`  | Read a file and display its contents              | `read config.txt`            |
 | `info`             | Display general file system information           | `info`                       |
-| `delpart`          | Format EEPROM and erase all stored data and reflashes bootsector  | `delpart`                    |
+| `delpart`          | Format EEPROM and erase all stored data           | `delpart`                    |
 | `storeuse`         | Show storage usage percentage                     | `storeuse`                    |
 | `storeusebytes`    | Show the total number of bytes currently used     | `storeusebytes`               |
 | `exit`             | Exit the terminal session                         | `exit`                        |
@@ -202,7 +203,14 @@ void terminal();
 
 ---
 
+## **Warnings**  
+
+- **FAT Entry Size Limitation:**  
+  - The current FAT entry size is **16 bytes**, which limits **file names to a maximum of 8 characters**.  
+  - Ensure that file names follow this restriction to avoid errors.  
+
+---
+
 ## **License**  
 
 This project is licensed under the **MIT License**. You are free to modify, distribute, and use it in personal or commercial projects.  
-
