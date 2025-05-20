@@ -88,7 +88,7 @@ Ensure that the correct EEPROM type is passed as a parameter.
 
 ### Writing Data to a File  
 ```cpp
-fs.writeFile("config.txt", "settings123");
+fs.writeFile("config", "settings123");
 ```
 
 ### Reading Data from a File  
