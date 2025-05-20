@@ -94,7 +94,7 @@ fs.writeFile("config", "settings123");
 ### Reading Data from a File  
 ```cpp
 char buffer[256]; // Allocate buffer
-uint32_t length = fs.readFile("config.txt", buffer);
+uint32_t length = fs.readFile("config", buffer);
 Serial.println(buffer);
 delete[] buffer; // Free memory after use
 ```
@@ -188,7 +188,7 @@ void terminal();
   - Example:
     ```cpp
     char* buffer = new char[256];
-    uint32_t len = fs.readFile("config.txt", buffer);
+    uint32_t len = fs.readFile("config", buffer);
     Serial.println(buffer);
     delete[] buffer;
     ```
