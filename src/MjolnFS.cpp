@@ -89,7 +89,8 @@ bool MjolnFileSystem::mount()
         printLogs("File system version: " + String(_bootSector.version) + "\n");
         printLogs("File system signature: " + String(_bootSector.signature) + "\n");
         printLogs("Last data address: " + String(lastDataAddr) + "\n");
-        printLogs("File count: " + String((_bootSector.fileCount[0] | _bootSector.fileCount[1] << 8) - (uint16_t)_bootSector.deleted) + "\n");
+        printLogs("File count: " + String((_bootSector.fileCount[0] | _bootSector.fileCount[1] << 8) - (uint16_t)_bootSector.deleted) + "\n\n");
+        isInit = true;
         getBytesUsed();
     }
     else
@@ -99,22 +100,15 @@ bool MjolnFileSystem::mount()
     }
     _pageSize = _bootSector.pageSize;
     _fatEntryCount = _bootSector.fileCount[0] | (_bootSector.fileCount[1] << 8);
-    isInit = true;
     return true;
 }
 
 bool MjolnFileSystem::format()
 {
-    if (!isFileSystemInitialized())
-        return false;
-
-    if (!deletePartition(MJOLN_STORAGE_DEVICE_ADDRESS, 65535))
-    {
-        printLogs("Failed to delete partition.\n");
-        return false;
-    }
-
     printLogs("Formatting file system...\n");
+    if (!cleanFormat())
+        return false;
+
     _bootSector.version = MJOLN_FILE_SYSTEM_VERSION;
     memcpy(_bootSector.signature, signature, MJOLN_FILE_SYSTEM_SIGNATURE_SIZE);
     _bootSector.pageSize = MJOLN_FILE_SYSTEM_PAGE_SIZE;
@@ -131,6 +125,20 @@ bool MjolnFileSystem::format()
     if (!writeBootSector(_bootSector))
     {
         _bootSector = readBootSector();
+        return false;
+    }
+    isInit = true;
+    return true;
+}
+
+bool MjolnFileSystem::cleanFormat()
+{
+    if (!Wire.available())
+        Wire.begin();
+
+    if (!deletePartition(MJOLN_STORAGE_DEVICE_ADDRESS, (uint16_t)(pow(2, (uint8_t)_eepromType) - 1)))
+    {
+        printLogs("Failed to delete partition.\n");
         return false;
     }
     return true;
