@@ -13,7 +13,7 @@
 5. [Usage](#usage)  
 6. [Command Set](#command-set)  
 7. [API Reference](#api-reference)  
-   - Initialization  
+   - Initialization and Mounting  
    - File Operations  
    - File System Information  
    - Terminal Interaction  
@@ -52,7 +52,10 @@ The correct EEPROM model must be selected when initializing the file system.
 - **File Management**: Create, read, write, delete, and list files stored in EEPROM.  
 - **Storage Monitoring**: Retrieve storage usage information, including percentage and bytes used.  
 - **System Control**: Print file system details, format EEPROM, and manage logs.  
-- **Serial Terminal Interaction**: Execute commands via the serial interface for real-time file system management.  
+- **EEPROM Formatting**: Two formatting options:  
+  - `format()`: Resets the boot sector and erases all data.  
+  - `cleanFormat()`: Erases all data without reflashing the boot sector.  
+- **Serial Terminal Interaction**: Execute commands via the serial interface for real-time file system management.
 
 ---
 
@@ -66,12 +69,14 @@ git clone https://github.com/YOUR_USERNAME/MjolnFileSystem.git
 cd MjolnFileSystem
 ```
 
-### 2. Initialize the File System  
+### 2. Initialize and Mount the File System  
 Before using any file operations, initialize the file system:
 
 ```cpp
 MjolnFileSystem fs(AT24C32);  // Initialize with chosen EEPROM model
-fs.begin();
+if (!fs.mount()) {
+    fs.format();  // Format EEPROM if unrecognized
+}
 ```
 
 Ensure that the correct EEPROM type is passed as a parameter.
@@ -79,12 +84,6 @@ Ensure that the correct EEPROM type is passed as a parameter.
 ---
 
 ## **Usage**  
-
-### Initializing the File System  
-```cpp
-MjolnFileSystem fs(AT24C64);
-fs.begin();
-```
 
 ### Writing Data to a File  
 ```cpp
@@ -94,7 +93,8 @@ fs.writeFile("config.txt", "settings123");
 ### Reading Data from a File  
 ```cpp
 char buffer[256]; // Allocate buffer
-Serial.println(fs.readFile("config.txt", buffer));
+uint32_t length = fs.readFile("config.txt", buffer);
+Serial.println(buffer);
 delete[] buffer; // Free memory after use
 ```
 
@@ -121,28 +121,29 @@ The `terminal()` function supports various commands for file system interactions
 | `ls`               | List all available files                          | `ls`                         |
 | `read <filename>`  | Read a file and display its contents              | `read config.txt`            |
 | `info`             | Display general file system information           | `info`                       |
-| `delpart`          | Format EEPROM and erase all stored data           | `delpart`                    |
+| `delpart`          | Format EEPROM and erase all stored data and reflashes bootsector  | `delpart`                    |
 | `storeuse`         | Show storage usage percentage                     | `storeuse`                    |
 | `storeusebytes`    | Show the total number of bytes currently used     | `storeusebytes`               |
-| `exit`             | Exit the terminal                                 | `exit`                        |
+| `exit`             | Exit the terminal session                         | `exit`                        |
 
 ---
 
 ## **API Reference**  
 
-### Initialization  
+### Initialization and Mounting  
 
 ```cpp
 MjolnFileSystem(AT24CXType eepromModel);
-bool begin();
+bool mount();
 ```
 - Initializes the file system with the specified EEPROM model.  
+- If the EEPROM is unrecognized, `format()` should be used before mounting.
 
 ### File Operations  
 
 ```cpp
 bool writeFile(const char *filename, const char *data);
-char *readFile(const char *filename, char *buffer);
+uint32_t readFile(const char *filename, char *buffer);
 bool deleteFile(const char *filename);
 void listFiles();
 ```
@@ -157,12 +158,14 @@ void listFiles();
 void printFileSystemInfo();
 void printFileInfo(const char *filename);
 bool format();
+bool cleanFormat();
 float getStorageUsage();
 uint32_t getBytesUsed();
 ```
 - `printFileSystemInfo()`: Displays details about the file system.  
 - `printFileInfo()`: Shows metadata and size of a specific file.  
-- `format()`: Erases all stored data.  
+- `format()`: Erases all data and resets the boot sector.  
+- `cleanFormat()`: Erases all data without modifying the boot sector.  
 - `getStorageUsage()`: Returns storage usage as a percentage.  
 - `getBytesUsed()`: Returns total bytes occupied.  
 
@@ -172,6 +175,8 @@ uint32_t getBytesUsed();
 void terminal();
 ```
 - Provides a serial-based interface for executing file system commands.  
+- Supports file manipulation, system queries, and formatting operations.  
+- Allows users to exit the terminal session using the `exit` command.  
 
 ---
 
@@ -182,7 +187,8 @@ void terminal();
   - Example:
     ```cpp
     char* buffer = new char[256];
-    Serial.println(fs.readFile("config.txt", buffer));
+    uint32_t len = fs.readFile("config.txt", buffer);
+    Serial.println(buffer);
     delete[] buffer;
     ```
   
@@ -199,3 +205,4 @@ void terminal();
 ## **License**  
 
 This project is licensed under the **MIT License**. You are free to modify, distribute, and use it in personal or commercial projects.  
+

@@ -38,12 +38,12 @@ void MjolnFileSystem::processCommand(String command)
             char *buffer = new char[256];
             if (buffer)
             {
-                char *fileContent = readFile(filename.c_str(), buffer);
+                readFile(filename.c_str(), buffer);
 
-                if (fileContent)
+                if (buffer)
                 {
                     Serial.print("File content:\n");
-                    Serial.println(fileContent);
+                    Serial.println(buffer);
                 }
                 else
                     Serial.println("Failed to read file.");

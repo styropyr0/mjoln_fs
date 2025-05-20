@@ -39,11 +39,12 @@ public:
     MjolnFileSystem(AT24CXType eepromModel);
 
     /**
-     * @brief Initializes the file system.
+     * @brief Initializes and mounts the file system.
      * @return True if initialization succeeds, false otherwise.
-     * @note Must be called before performing any file operations.
+     * @note Must be called once before performing any file operations.
+     * If the eeprom is not recogonized as a MjolnFS compatible eeprom, it should be formatted using @fn format() method.
      */
-    bool begin();
+    bool mount();
 
     /**
      * @brief Writes data to a file.
@@ -58,10 +59,10 @@ public:
      * @brief Reads data from a file.
      * @param filename Name of the file to read.
      * @param buffer Buffer to store the read data.
-     * @return Pointer to the buffer containing file contents.
+     * @return Length of the file contents.
      * @note Caller is responsible for deallocating the buffer.
      */
-    char *readFile(const char *filename, char *buffer);
+    uint32_t readFile(const char *filename, char *buffer);
 
     /**
      * @brief Deletes a specified file.
@@ -91,11 +92,18 @@ public:
     void printFileInfo(const char *filename);
 
     /**
-     * @brief Formats the file system, erasing all data.
+     * @brief Formats the file system, erasing all data and reset the bootsector.
      * @return True if formatting succeeds, false otherwise.
      * @note **WARNING:** This action deletes all stored files permanently.
      */
     bool format();
+
+    /**
+     * @brief Formats the file system, erasing all data. This doesn't reflash the bootsector.
+     * @return True if formatting succeeds, false otherwise.
+     * @note **WARNING:** This action deletes all stored files permanently. Bootsector will be cleared.
+     */
+    bool cleanFormat();
 
     /**
      * @brief Enables or disables system logs.
@@ -129,6 +137,7 @@ private:
     uint16_t _pageSize;     // Size of a page in EEPROM
     const char *signature;  // File system signature
     AT24CXType _eepromType; // Type of the EEPROM
+    bool isInit = false;
 
     FS_BootSector _bootSector;
     FS_FATEntry tempFatEntry;
@@ -140,6 +149,7 @@ private:
     bool writeFATEntry(uint16_t index, const FS_FATEntry &entry);
     bool updateFATEntry(uint16_t index, const FS_FATEntry &entry);
     uint16_t checkFileExistence(const char *filename);
+    bool isFileSystemInitialized();
     uint8_t getPageSize();
     uint16_t getUsableSize();
     uint16_t getReservedSize();

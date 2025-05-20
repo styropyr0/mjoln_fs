@@ -76,7 +76,7 @@ bool MjolnFileSystem::updateFATEntry(uint16_t index, const FS_FATEntry &entry)
     }
 }
 
-bool MjolnFileSystem::begin()
+bool MjolnFileSystem::mount()
 {
     Wire.begin();
     _bootSector = readBootSector();
@@ -99,11 +99,15 @@ bool MjolnFileSystem::begin()
     }
     _pageSize = _bootSector.pageSize;
     _fatEntryCount = _bootSector.fileCount[0] | (_bootSector.fileCount[1] << 8);
+    isInit = true;
     return true;
 }
 
 bool MjolnFileSystem::format()
 {
+    if (!isFileSystemInitialized())
+        return false;
+
     if (!deletePartition(MJOLN_STORAGE_DEVICE_ADDRESS, 65535))
     {
         printLogs("Failed to delete partition.\n");
@@ -134,6 +138,9 @@ bool MjolnFileSystem::format()
 
 bool MjolnFileSystem::writeFile(const char *filename, const char *data)
 {
+    if (!isFileSystemInitialized())
+        return false;
+
     if (checkFileExistence(filename) == MJOLN_FILE_NOT_FOUND)
     {
         uint32_t length = strlen(data);
@@ -188,8 +195,11 @@ bool MjolnFileSystem::writeFile(const char *filename, const char *data)
     return false;
 }
 
-char *MjolnFileSystem::readFile(const char *filename, char *buffer)
+uint32_t MjolnFileSystem::readFile(const char *filename, char *buffer)
 {
+    if (!isFileSystemInitialized())
+        return 0;
+
     uint16_t i = checkFileExistence(filename);
     if (i != MJOLN_FILE_NOT_FOUND)
     {
@@ -210,14 +220,17 @@ char *MjolnFileSystem::readFile(const char *filename, char *buffer)
                 printLogs(String(buffer[i]));
             printLogs("\n\n");
         }
-        return (char *)buffer;
+        return length;
     }
     printLogs("File not found.\n");
-    return nullptr;
+    return 0;
 }
 
 bool MjolnFileSystem::deleteFile(const char *filename)
 {
+    if (!isFileSystemInitialized())
+        return false;
+
     uint16_t i = checkFileExistence(filename);
     if (i != MJOLN_FILE_NOT_FOUND)
     {
@@ -279,6 +292,9 @@ uint16_t MjolnFileSystem::checkFileExistence(const char *filename)
 
 void MjolnFileSystem::listFiles()
 {
+    if (!isFileSystemInitialized())
+        return;
+
     printLogs("FILES LIST\nroot\\\n");
     for (uint16_t i = 1; i <= _fatEntryCount; i++)
     {
@@ -353,6 +369,9 @@ AT24CX_ADDR_SIZE MjolnFileSystem::getAddressSize()
 
 float MjolnFileSystem::getStorageUsage()
 {
+    if (!isFileSystemInitialized())
+        return -1;
+
     printLogs("\nSTORAGE USAGE\n-------------\n");
     float usage = (_bootSector.bytesInUse * 100) / (pow(2, (uint8_t)_eepromType));
     printLogs(String(usage) + "\% used from available space.\n");
@@ -362,6 +381,9 @@ float MjolnFileSystem::getStorageUsage()
 
 uint32_t MjolnFileSystem::getBytesUsed()
 {
+    if (!isFileSystemInitialized())
+        return 0;
+
     printLogs("\nSTORAGE USAGE\n-------------\n");
     printLogs(String(_bootSector.bytesInUse) + " bytes used from available space.\n");
     printLogs("Total: " + String((uint32_t)pow(2, (uint8_t)_eepromType)) + " bytes, " + String(getReservedSize()) + " bytes reserved by file system.\n\n");
@@ -370,6 +392,9 @@ uint32_t MjolnFileSystem::getBytesUsed()
 
 void MjolnFileSystem::printFileInfo(const char *filename)
 {
+    if (!isFileSystemInitialized())
+        return;
+
     if (checkFileExistence(filename))
     {
         uint32_t length = tempFatEntry.size[0] | (tempFatEntry.size[1] << 8) | (tempFatEntry.size[2] << 16);
@@ -387,6 +412,9 @@ void MjolnFileSystem::printFileInfo(const char *filename)
 
 void MjolnFileSystem::printFileSystemInfo()
 {
+    if (!isFileSystemInitialized())
+        return;
+
     printLogs("\nMjoln File System\n-----------------\n");
     printLogs("EEPROM type: " + String(_eepromType) + "\n");
     printLogs("File system version: " + String(_bootSector.version) + "\n");
@@ -402,9 +430,13 @@ void MjolnFileSystem::printFileSystemInfo()
 
 void MjolnFileSystem::terminal()
 {
+    if (!isFileSystemInitialized())
+        return;
+
     String inputString = "";
     Serial.println("MJOLN FILE SYSTEM TERMINAL");
     Serial.print("\nmjolnFS@v1> ");
+    showLogs(false);
 
     while (true)
     {
@@ -433,4 +465,12 @@ void MjolnFileSystem::terminal()
             }
         }
     }
+    showLogs(true);
+}
+
+bool MjolnFileSystem::isFileSystemInitialized()
+{
+    if (!isInit)
+        printLogs("File system is not initialized. Possible reasons could be:\n-> Incompatible EEPROM\n-> Skipped mount method\n-> Connection failure to EEPROM\n\n");
+    return isInit;
 }
