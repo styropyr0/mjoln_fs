@@ -168,7 +168,8 @@ uint32_t getBytesUsed();
 - `format()`: Erases all data and resets the boot sector.  
 - `cleanFormat()`: Erases all data without modifying the boot sector.  
 - `getStorageUsage()`: Returns storage usage as a percentage.  
-- `getBytesUsed()`: Returns total bytes occupied.  
+- `getBytesUsed()`: Returns total bytes occupied.
+- `showLogs(bool show)`: Shows or hides file system logs, errors, etc.  
 
 ### Terminal Interaction  
 
