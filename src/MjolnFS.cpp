@@ -188,7 +188,7 @@ bool MjolnFileSystem::writeFile(const char *filename, const char *data)
             printLogs("----------------\n");
             printLogs("File written successfully.\n");
             printLogs("File name: " + String(fatEntry.filename) + "\n");
-            printLogs("File size: " + String(length) + "\n");
+            printLogs("File size: " + String(length) + " bytes\n");
             printLogs("File start address: " + String(startAddr) + "\n");
             printLogs("File status: " + String(fatEntry.status) + "\n");
             printLogs("File data: ");
@@ -215,13 +215,14 @@ uint32_t MjolnFileSystem::readFile(const char *filename, char *buffer)
         uint32_t startAddr = tempFatEntry.startAddr[0] | (tempFatEntry.startAddr[1] << 8) | (tempFatEntry.startAddr[2] << 16);
         printLogs("Reading file...\n");
         eepromReadBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (uint8_t *)buffer, length, getPageSize());
+        buffer[length] = '\0';
         if (logEnabled)
         {
             printLogs("\nFILE READ LOGS\n");
             printLogs("----------------\n");
             printLogs("File read successfully.\n");
             printLogs("File name: " + String(tempFatEntry.filename) + "\n");
-            printLogs("File size: " + String(length) + "\n");
+            printLogs("File size: " + String(length) + " bytes\n");
             printLogs("File start address: " + String(startAddr) + "\n");
             printLogs("File data: ");
             for (size_t i = 0; i < length; i++)
@@ -274,7 +275,7 @@ bool MjolnFileSystem::deleteFile(const char *filename)
                 printLogs("----------------\n");
                 printLogs("File deleted successfully.\n");
                 printLogs("File name: " + String(tempFatEntry.filename) + "\n");
-                printLogs("File size: " + String(length) + "\n");
+                printLogs("File size: " + String(length) + " bytes\n");
                 printLogs("File start address: " + String(startAddr) + "\n");
                 printLogs("File status: DELETED\n\n");
             }
