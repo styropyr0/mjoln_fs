@@ -260,6 +260,7 @@ bool MjolnFileSystem::deleteFile(const char *filename)
                 _bootSector.bytesInUse -= length;
                 _bootSector.deleted++;
                 writeBootSector(_bootSector);
+                delay(5);
                 _bootSector = readBootSector();
             }
             else
@@ -304,6 +305,9 @@ void MjolnFileSystem::listFiles()
     if (!isFileSystemInitialized())
         return;
 
+    bool logState = logEnabled;
+    showLogs(true);
+
     printLogs("FILES LIST\nroot\\\n");
     for (uint16_t i = 1; i <= _fatEntryCount; i++)
     {
@@ -313,6 +317,8 @@ void MjolnFileSystem::listFiles()
         printLogs("     " + String(tempFatEntry.filename) + (i % 8 == 0 ? "\n" : ""));
     }
     printLogs("\n");
+
+    showLogs(logState);
 }
 
 void MjolnFileSystem::showLogs(bool show)
@@ -404,6 +410,9 @@ void MjolnFileSystem::printFileInfo(const char *filename)
     if (!isFileSystemInitialized())
         return;
 
+    bool logState = logEnabled;
+    showLogs(true);
+
     if (checkFileExistence(filename))
     {
         uint32_t length = tempFatEntry.size[0] | (tempFatEntry.size[1] << 8) | (tempFatEntry.size[2] << 16);
@@ -417,12 +426,17 @@ void MjolnFileSystem::printFileInfo(const char *filename)
     }
     else
         printLogs("File not found!\n");
+
+    showLogs(logState);
 }
 
 void MjolnFileSystem::printFileSystemInfo()
 {
     if (!isFileSystemInitialized())
         return;
+
+    bool logState = logEnabled;
+    showLogs(true);
 
     printLogs("\nMjoln File System\n-----------------\n");
     printLogs("EEPROM type: " + String(_eepromType) + "\n");
@@ -435,6 +449,8 @@ void MjolnFileSystem::printFileSystemInfo()
     printLogs("Address size: " + String(getAddressSize() ? "16 bit\n" : "8 bit\n"));
     printLogs("Page size: " + String(getPageSize()) + " Bytes\n");
     printLogs("Storage use: " + String((_bootSector.bytesInUse * 100) / (pow(2, (uint8_t)_eepromType))) + "%\n\n");
+
+    showLogs(logState);
 }
 
 void MjolnFileSystem::terminal()

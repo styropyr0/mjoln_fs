@@ -38,21 +38,18 @@ void MjolnFileSystem::processCommand(String command)
             char *buffer = new char[256];
             if (buffer)
             {
-                readFile(filename.c_str(), buffer);
-
-                if (buffer)
+                if (readFile(filename.c_str(), buffer))
                 {
-                    Serial.print("File content:\n");
                     Serial.println(buffer);
                 }
                 else
-                    Serial.println("Failed to read file.");
+                    Serial.println("ERR: File not found.");
 
                 delete[] buffer;
             }
             else
             {
-                Serial.println("Memory allocation failed.");
+                Serial.println("ERR: Memory allocation failed.");
             }
         }
         else
@@ -68,7 +65,8 @@ void MjolnFileSystem::processCommand(String command)
     else if (command.equals("storeuse"))
     {
         Serial.print("Storage Usage: ");
-        Serial.println(getStorageUsage(), 2);
+        Serial.print(getStorageUsage(), 2);
+        Serial.println("%");
     }
     else if (command.equals("storeusebytes"))
     {
