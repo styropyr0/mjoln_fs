@@ -138,10 +138,12 @@ private:
     const char *signature;  // File system signature
     AT24CXType _eepromType; // Type of the EEPROM
     bool isInit = false;
+    bool loadBalancingState = false;
 
     FS_BootSector _bootSector;
     FS_FATEntry tempFatEntry;
     uint16_t _fatEntryCount;
+    String fileLookupList;
 
     FS_BootSector readBootSector();
     bool writeBootSector(const FS_BootSector &bootSector);
@@ -155,6 +157,9 @@ private:
     uint16_t getReservedSize();
     void processCommand(String command);
     void extractArgs(String command, String &filename, String &data);
+    uint16_t findFileFromCache(const char *filename);
+    void runInitialIndexingAndStore();
+
     AT24CX_ADDR_SIZE getAddressSize();
 };
 

@@ -82,14 +82,21 @@ bool MjolnFileSystem::mount()
     _bootSector = readBootSector();
     if (verifyBootSector(&_bootSector))
     {
+        _pageSize = _bootSector.pageSize;
+        _fatEntryCount = _bootSector.fileCount[0] | (_bootSector.fileCount[1] << 8);
         uint32_t lastDataAddr = _bootSector.lastDataAddr[0] | (_bootSector.lastDataAddr[1] << 8) | (_bootSector.lastDataAddr[2] << 16);
+
+        printLogs("Mounting file system...\n");
+        runInitialIndexingAndStore();
+        printLogs("File system mounted.");
+
         printLogs("\nMjoln File System\n-----------------\n");
         printLogs("EEPROM type: " + String(_eepromType) + "\n");
         printLogs("Valid file system signature.\n");
         printLogs("File system version: " + String(_bootSector.version) + "\n");
         printLogs("File system signature: " + String(_bootSector.signature) + "\n");
         printLogs("Last data address: " + String(lastDataAddr) + "\n");
-        printLogs("File count: " + String((_bootSector.fileCount[0] | _bootSector.fileCount[1] << 8) - (uint16_t)_bootSector.deleted) + "\n\n");
+        printLogs("File count: " + String(_fatEntryCount - (uint16_t)_bootSector.deleted) + "\n\n");
         isInit = true;
         getBytesUsed();
     }
@@ -98,8 +105,6 @@ bool MjolnFileSystem::mount()
         printLogs("Invalid file system signature.\n");
         return false;
     }
-    _pageSize = _bootSector.pageSize;
-    _fatEntryCount = _bootSector.fileCount[0] | (_bootSector.fileCount[1] << 8);
     return true;
 }
 
@@ -180,6 +185,9 @@ bool MjolnFileSystem::writeFile(const char *filename, const char *data)
                 return false;
             }
             _fatEntryCount++;
+            if (_fatEntryCount > 1)
+                fileLookupList.concat(",");
+            fileLookupList.concat(fatEntry.filename);
         }
 
         if (logEnabled)
@@ -289,15 +297,9 @@ bool MjolnFileSystem::deleteFile(const char *filename)
 
 uint16_t MjolnFileSystem::checkFileExistence(const char *filename)
 {
-    for (uint16_t i = 1; i <= _fatEntryCount; i++)
-    {
-        tempFatEntry = readFATEntry(i);
-        if (tempFatEntry.status == MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE)
-            continue;
-        if (strcmp(tempFatEntry.filename, filename) == 0)
-            return i;
-    }
-    return MJOLN_FILE_NOT_FOUND;
+    uint16_t i = findFileFromCache(filename);
+    tempFatEntry = readFATEntry(i);
+    return i;
 }
 
 void MjolnFileSystem::listFiles()
@@ -498,4 +500,43 @@ bool MjolnFileSystem::isFileSystemInitialized()
     if (!isInit)
         printLogs("File system is not initialized. Possible reasons could be:\n-> Incompatible EEPROM\n-> Skipped mount method\n-> Connection failure to EEPROM\n\n");
     return isInit;
+}
+
+uint16_t MjolnFileSystem::findFileFromCache(const char *filename)
+{
+    uint16_t pos = 0;
+
+    if (_fatEntryCount > 0)
+    {
+        loadBalancingState = true;
+
+        char filesBuffer[fileLookupList.length() + 1];
+        strcpy(filesBuffer, fileLookupList.c_str());
+
+        char *token = strtok(filesBuffer, ",");
+        uint16_t index = 1;
+
+        while (token != NULL)
+        {
+            if (strcmp(token, filename) == 0)
+            {
+                pos = index;
+                break;
+            }
+            token = strtok(NULL, ",");
+            index++;
+        }
+    }
+    return pos;
+}
+
+void MjolnFileSystem::runInitialIndexingAndStore()
+{
+    if (_fatEntryCount == 0)
+        return;
+    for (uint16_t i = 1; i <= _fatEntryCount; i++)
+    {
+        tempFatEntry = readFATEntry(i);
+        fileLookupList += String(tempFatEntry.filename) + (i < _fatEntryCount ? "," : "");
+    }
 }
