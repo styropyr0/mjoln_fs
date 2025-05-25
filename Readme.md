@@ -1,25 +1,25 @@
 # MjolnFileSystem  
 **Author:** Saurav Sajeev  
 **Description:** A file system designed for EEPROM storage management using AT24C series chips.
+**Latest version:** 1.0.0
 
 ---
 
-## Table of Contents
-- Overview
-- Supported EEPROM Models
-- Features
-- Installation
-- Usage
-- Command Set
-- API Reference
-- Initialization and Mounting
-- File Operations
-- File System Information
-- Terminal Interaction
-- Performance Optimization (New)
-- Notes
-- Warnings
-- License
+## **Table of Contents**  
+1. [Overview](#overview)  
+2. [Supported EEPROM Models](#supported-eeprom-models)  
+3. [Features](#features)  
+4. [Installation](#installation)  
+5. [Usage](#usage)  
+6. [Command Set](#command-set)  
+7. [API Reference](#api-reference)  
+   - Initialization and Mounting  
+   - File Operations  
+   - File System Information  
+   - Terminal Interaction  
+8. [Notes](#notes)  
+9. [Warnings](#warnings)  
+10. [License](#license)  
 
 ---
 
