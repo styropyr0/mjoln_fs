@@ -25,6 +25,7 @@
 #define MJOLN_FILE_SYSTEM_FAT_AVAILABLE 0x01     // The FAT Entry is available in File System
 #define MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE 0x00   // The FAT Entry is unavailable in File System
 #define MJOLN_FILE_NOT_FOUND 0                   // The default value to be returned when file is not found
+#define MJOLN_FILE_SYSTEM_CACHING_LIMIT 10       // The limit for lookup file list for improved file system reads and checks
 
 #define MJOLN_STORAGE_DEVICE_ADDRESS 0x50 // I2C address of the EEPROM device
 

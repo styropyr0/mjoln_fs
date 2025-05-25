@@ -504,17 +504,15 @@ bool MjolnFileSystem::isFileSystemInitialized()
 
 uint16_t MjolnFileSystem::findFileFromCache(const char *filename)
 {
-    uint16_t pos = 0;
+    uint16_t pos = MJOLN_FILE_NOT_FOUND;
 
     if (_fatEntryCount > 0)
     {
-        loadBalancingState = true;
-
         char filesBuffer[fileLookupList.length() + 1];
         strcpy(filesBuffer, fileLookupList.c_str());
 
         char *token = strtok(filesBuffer, ",");
-        uint16_t index = 1;
+        uint16_t index = loadBalancingState ? _fatEntryCount / 2 : 1;
 
         while (token != NULL)
         {
@@ -527,6 +525,17 @@ uint16_t MjolnFileSystem::findFileFromCache(const char *filename)
             index++;
         }
     }
+
+    if (loadBalancingState && pos == MJOLN_FILE_NOT_FOUND)
+        for (uint16_t i = 1; i <= _fatEntryCount / 2; i++)
+        {
+            tempFatEntry = readFATEntry(i);
+            if (tempFatEntry.status == MJOLN_FILE_SYSTEM_FAT_UNAVAILABLE)
+                continue;
+            if (strcmp(tempFatEntry.filename, filename) == 0)
+                pos = i;
+        }
+
     return pos;
 }
 
@@ -534,7 +543,8 @@ void MjolnFileSystem::runInitialIndexingAndStore()
 {
     if (_fatEntryCount == 0)
         return;
-    for (uint16_t i = 1; i <= _fatEntryCount; i++)
+    loadBalancingState = _fatEntryCount >= MJOLN_FILE_SYSTEM_CACHING_LIMIT;
+    for (uint16_t i = (_fatEntryCount < MJOLN_FILE_SYSTEM_CACHING_LIMIT ? 1 : (_fatEntryCount / 2)); i <= _fatEntryCount; i++)
     {
         tempFatEntry = readFATEntry(i);
         fileLookupList += String(tempFatEntry.filename) + (i < _fatEntryCount ? "," : "");
