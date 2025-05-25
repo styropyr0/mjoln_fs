@@ -40,9 +40,35 @@ bool eepromReadBytes(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE ad
  */
 bool eepromWriteBytes(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE addressSize, const uint8_t *data, uint16_t length, uint8_t pageSize);
 
+/**
+ * @brief Deletes a specified number of bytes from the EEPROM.
+ * @param eepromAddr The I2C address of the EEPROM.
+ * @param storeAddr The starting address in the EEPROM to delete.
+ * @param addressSize The size of the address in bytes.
+ * @param length The number of bytes to delete.
+ * @param pageSize The size of the EEPROM page.
+ * @note The pageSize is used to determine the maximum number of bytes that can be written in a single operation.
+ * @return true if the delete operation was successful, false otherwise.
+ */
 bool eepromDeleteMemoryRange(uint8_t eepromAddr, uint32_t storeAddr, AT24CX_ADDR_SIZE addressSize, uint16_t length, uint8_t pageSize);
 
+/**
+ * @brief Deletes all data in the EEPROM.
+ * @param eepromAddr The I2C address of the EEPROM.
+ * @param length The number of bytes to delete.
+ * @return true if the delete operation was successful, false otherwise.
+ */
 bool deletePartition(uint8_t eepromAddr, uint16_t length);
+
+/**
+ * @brief Prints the raw data in the eeprom over the start and end addresses specified.
+ * @param eepromAddr The I2C address of the EEPROM.
+ * @param start The starting address in the EEPROM.
+ * @param end The address to which memory dump should be printed.
+ * @param addressSize The size of the address in bytes.
+ * @param pageSize The size of the EEPROM page.
+ * @note The pageSize is used to determine the maximum number of bytes that can be written in a single operation.
+ */
 void showMemoryDump(uint8_t eepromAddr, uint16_t start, uint16_t end, AT24CX_ADDR_SIZE addressSize, uint8_t pageSize);
 
 #endif // __cplusplus

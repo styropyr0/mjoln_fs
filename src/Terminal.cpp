@@ -8,8 +8,24 @@ void MjolnFileSystem::processCommand(String command)
         extractArgs(command, filename, data);
         if (!filename.isEmpty() && !data.isEmpty())
         {
-            writeFile(filename.c_str(), data.c_str());
-            Serial.println("File created.");
+            if (writeFile(filename.c_str(), data.c_str()))
+                Serial.println("File created.");
+            else
+                Serial.println("ERR: File already exists!");
+        }
+        else
+            Serial.println("Usage: mk <filename> <data>");
+    }
+    else if (command.startsWith("update "))
+    {
+        String filename, data;
+        extractArgs(command, filename, data);
+        if (!filename.isEmpty() && !data.isEmpty())
+        {
+            if (updateFile(filename.c_str(), data.c_str()))
+                Serial.println("File updated.");
+            else
+                Serial.println("ERR: File not found!");
         }
         else
             Serial.println("Usage: mk <filename> <data>");

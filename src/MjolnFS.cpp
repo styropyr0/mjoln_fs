@@ -149,6 +149,67 @@ bool MjolnFileSystem::cleanFormat()
     return true;
 }
 
+bool MjolnFileSystem::updateFile(const char *filename, const char *data)
+{
+    if (!isFileSystemInitialized())
+        return false;
+
+    uint16_t index = checkFileExistence(filename);
+
+    if (index != MJOLN_FILE_NOT_FOUND)
+    {
+        FS_FATEntry fatEntry;
+        uint32_t length = strlen(data);
+        fatEntry.size[0] = length & 0xFF;
+        fatEntry.size[1] = (length >> 8) & 0xFF;
+        fatEntry.size[2] = (length >> 16) & 0xFF;
+        uint32_t startAddr = tempFatEntry.startAddr[0] | (tempFatEntry.startAddr[1] << 8) | (tempFatEntry.startAddr[2] << 16);
+        printLogs("Updating file...\n");
+        if (length <= (tempFatEntry.size[0] | (tempFatEntry.size[1] << 8) | (tempFatEntry.size[2] << 16)))
+        {
+            uint32_t dataLength = tempFatEntry.size[0] | (tempFatEntry.size[1] << 8) | (tempFatEntry.size[2] << 16);
+            eepromDeleteMemoryRange(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), dataLength, getPageSize());
+            if (!eepromWriteBytes(MJOLN_STORAGE_DEVICE_ADDRESS, startAddr, getAddressSize(), (const uint8_t *)data, length + 1, getPageSize()))
+                printLogs("Failed to update the file data.\n");
+            else
+                updateFATEntry(index, fatEntry);
+        }
+        else
+        {
+            bool logState = logEnabled;
+            if (logEnabled)
+                showLogs(false);
+            bool res = deleteFile(filename) && writeFile(filename, data);
+            if (logEnabled)
+                showLogs(logEnabled);
+            if (!res)
+            {
+                printLogs("Failed to update the file data.\n");
+                return false;
+            }
+        }
+
+        if (logEnabled)
+        {
+            printLogs("\nFILE UPDATE LOGS\n");
+            printLogs("----------------\n");
+            printLogs("File updated successfully.\n");
+            printLogs("File name: " + String(fatEntry.filename) + "\n");
+            printLogs("File size: " + String(length) + " bytes\n");
+            printLogs("File start address: " + String(startAddr) + "\n");
+            printLogs("File status: " + String(fatEntry.status) + "\n");
+            printLogs("File data: ");
+            for (size_t i = 0; i < length; i++)
+                printLogs(String(data[i]));
+            printLogs("\n\n");
+        }
+
+        return true;
+    }
+    printLogs("File not found!\n");
+    return false;
+}
+
 bool MjolnFileSystem::writeFile(const char *filename, const char *data)
 {
     if (!isFileSystemInitialized())
@@ -297,9 +358,7 @@ bool MjolnFileSystem::deleteFile(const char *filename)
 
 uint16_t MjolnFileSystem::checkFileExistence(const char *filename)
 {
-    uint16_t i = findFileFromCache(filename);
-    tempFatEntry = readFATEntry(i);
-    return i;
+    return findFileFromCache(filename);
 }
 
 void MjolnFileSystem::listFiles()
@@ -518,8 +577,12 @@ uint16_t MjolnFileSystem::findFileFromCache(const char *filename)
         {
             if (strcmp(token, filename) == 0)
             {
-                pos = index;
-                break;
+                tempFatEntry = readFATEntry(index);
+                if (tempFatEntry.status)
+                {
+                    pos = index;
+                    break;
+                }
             }
             token = strtok(NULL, ",");
             index++;

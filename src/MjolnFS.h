@@ -51,7 +51,6 @@ public:
      * @param filename Name of the file to write to.
      * @param data Data to be written.
      * @return True if write operation is successful, false otherwise.
-     * @note Overwrites existing content if the file already exists.
      */
     bool writeFile(const char *filename, const char *data);
 
@@ -63,6 +62,15 @@ public:
      * @note Caller is responsible for deallocating the buffer.
      */
     uint32_t readFile(const char *filename, char *buffer);
+
+    /**
+     * @brief Updates data in a file.
+     * @param filename Name of the file to write to.
+     * @param data Data to be written.
+     * @return True if update operation is successful, false otherwise.
+     * @note Overwrites existing content if the file already exists.
+     */
+    bool updateFile(const char *filename, const char *data);
 
     /**
      * @brief Deletes a specified file.
