@@ -152,6 +152,8 @@ private:
     FS_FATEntry tempFatEntry;
     uint16_t _fatEntryCount;
     String fileLookupList;
+    uint16_t *voidFATEntryCache;
+    uint16_t voidFATEntryCacheSize = 0;
 
     FS_BootSector readBootSector();
     bool writeBootSector(const FS_BootSector &bootSector);
@@ -167,6 +169,9 @@ private:
     void extractArgs(String command, String &filename, String &data);
     uint16_t findFileFromCache(const char *filename);
     void runInitialIndexingAndStore();
+    void findAllVoidFATEntries();
+    void deleteLinks(uint32_t link);
+    uint16_t newLinkEntry(uint16_t length);
 
     AT24CX_ADDR_SIZE getAddressSize();
 };

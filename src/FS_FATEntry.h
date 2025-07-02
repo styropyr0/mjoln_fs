@@ -16,6 +16,7 @@ struct FS_FATEntry
     uint8_t startAddr[MJOLN_FILE_SYSTEM_START_ADDR_SIZE]; // Start address of the file in EEPROM
     uint8_t size[MJOLN_FILE_SYSTEM_FILE_SIZE];            // Size of the file in bytes
     char filename[MJOLN_FILE_NAME_MAX_LENGTH];            // File name (null-terminated)
+    uint32_t link;                                        // Link to the next FAT entry (for linked list structure)
     uint8_t status;                                       // Status of the file (0: free, 1: used)
 };
 

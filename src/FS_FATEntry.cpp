@@ -12,7 +12,8 @@ FS_FATEntry toFATEntry(uint8_t *buffer, size_t bufferSize)
     memcpy(fatEntry.filename, buffer + MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE, MJOLN_FILE_NAME_MAX_LENGTH - 1);
 
     fatEntry.filename[MJOLN_FILE_NAME_MAX_LENGTH - 1] = '\0';
-    fatEntry.status = buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1];
+    memcpy(&fatEntry.link, buffer + MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1, sizeof(fatEntry.link));
+    fatEntry.status = buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1 + sizeof(fatEntry.link)];
 
     return fatEntry;
 }
@@ -27,8 +28,9 @@ uint8_t *fatToBytes(const FS_FATEntry *fatEntry)
     memcpy(buffer, fatEntry->startAddr, MJOLN_FILE_SYSTEM_START_ADDR_SIZE);
     memcpy(buffer + MJOLN_FILE_SYSTEM_START_ADDR_SIZE, fatEntry->size, MJOLN_FILE_SYSTEM_FILE_SIZE);
     memcpy(buffer + MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE, fatEntry->filename, MJOLN_FILE_NAME_MAX_LENGTH - 1);
-
-    buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1] = fatEntry->status;
+    buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1] = '\0';
+    memcpy(buffer + MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1, &fatEntry->link, sizeof(fatEntry->link));
+    buffer[MJOLN_FILE_SYSTEM_START_ADDR_SIZE + MJOLN_FILE_SYSTEM_FILE_SIZE + MJOLN_FILE_NAME_MAX_LENGTH - 1 + sizeof(fatEntry->link)] = fatEntry->status;
 
     return buffer;
 }
