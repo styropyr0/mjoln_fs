@@ -1,6 +1,8 @@
 # MjolnFileSystem  
 **Author:** Saurav Sajeev  
+
 **Description:** A file system designed for EEPROM storage management using AT24C series chips.
+
 **Latest version:** 1.0.0
 
 ---
@@ -267,10 +269,3 @@ delete[] buffer;
 ## License
 
 This project is licensed under the **MIT License**. You are free to use, modify, and distribute it for personal or commercial purposes.
-
----
-
-```
-
-Let me know if you'd like this converted into an actual `README.md` file or need further enhancements (e.g., diagram of internal architecture, example terminal session logs, etc.).
-```
